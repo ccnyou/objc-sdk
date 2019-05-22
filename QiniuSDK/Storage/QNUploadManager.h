@@ -92,6 +92,23 @@ typedef void (^QNUpCompletionHandler)(QNResponseInfo *info, NSString *key, NSDic
          option:(QNUploadOption *)option;
 
 /**
+ *    直接上传数据
+ *
+ *    @param data              待上传的数据
+ *    @param key               上传到云存储的key，为nil时表示是由七牛生成
+ *    @param token             上传需要的token, 由服务器生成
+ *    @param queue             上传使用的队列，默认GCD全局队列
+ *    @param completionHandler 上传完成后的回调函数
+ *    @param option            上传时传入的可选参数
+ */
+- (void)putData:(NSData *)data
+            key:(NSString *)key
+          token:(NSString *)token
+          queue:(dispatch_queue_t)queue
+       complete:(QNUpCompletionHandler)completionHandler
+         option:(QNUploadOption *)option;
+
+/**
  *    上传文件
  *
  *    @param filePath          文件路径
@@ -109,7 +126,7 @@ typedef void (^QNUpCompletionHandler)(QNResponseInfo *info, NSString *key, NSDic
 /**
  *    上传ALAsset文件
  *
- *    @param alasset           ALAsset文件
+ *    @param asset             ALAsset文件
  *    @param key               上传到云存储的key，为nil时表示是由七牛生成
  *    @param token             上传需要的token, 由服务器生成
  *    @param completionHandler 上传完成后的回调函数
@@ -146,7 +163,7 @@ typedef void (^QNUpCompletionHandler)(QNResponseInfo *info, NSString *key, NSDic
  *    @param option            上传时传入的可选参数
  */
 
-- (void)putPHAssetResource:(PHAssetResource *)assetResource
+- (void)putPHAssetResource:(PHAssetResource *)asset
                        key:(NSString *)key
                      token:(NSString *)token
                   complete:(QNUpCompletionHandler)completionHandler
