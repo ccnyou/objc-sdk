@@ -16,7 +16,6 @@
 #import "QNUrlSafeBase64.h"
 
 @interface QNFormUpload ()
-
 @property (nonatomic, strong) NSData *data;
 @property (nonatomic, strong) id<QNHttpDelegate> httpManager;
 @property (nonatomic) int retryTimes;
@@ -27,9 +26,7 @@
 @property (nonatomic, strong) QNConfiguration *config;
 @property (nonatomic, strong) NSString *fileName;
 @property (nonatomic) float previousPercent;
-
 @property (nonatomic, strong) NSString *access; //AK
-
 @end
 
 @implementation QNFormUpload
@@ -43,107 +40,107 @@
              withHttpManager:(id<QNHttpDelegate>)http
            withConfiguration:(QNConfiguration *)config {
     if (self = [super init]) {
-        _data = data;
-        _key = key;
-        _token = token;
-        _option = option != nil ? option : [QNUploadOption defaultOptions];
-        _complete = block;
-        _httpManager = http;
-        _config = config;
-        _fileName = fileName != nil ? fileName : @"?";
-        _previousPercent = 0;
-        _access = token.access;
+        self.data = data;
+        self.key = key;
+        self.token = token;
+        self.option = option != nil ? option : [QNUploadOption defaultOptions];
+        self.complete = block;
+        self.httpManager = http;
+        self.config = config;
+        self.fileName = fileName != nil ? fileName : @"?";
+        self.previousPercent = 0;
+        self.access = token.access;
     }
     return self;
 }
 
 - (void)put {
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    if (_key) {
-        parameters[@"key"] = _key;
+    if (self.key) {
+        parameters[@"key"] = self.key;
     }
-    parameters[@"token"] = _token.token;
-    [parameters addEntriesFromDictionary:_option.params];
-    parameters[@"crc32"] = [NSString stringWithFormat:@"%u", (unsigned int)[QNCrc32 data:_data]];
+    parameters[@"token"] = self.token.token;
+    [parameters addEntriesFromDictionary:self.option.params];
+    parameters[@"crc32"] = [NSString stringWithFormat:@"%u", (unsigned int)[QNCrc32 data:self.data]];
     QNInternalProgressBlock p = ^(long long totalBytesWritten, long long totalBytesExpectedToWrite) {
         float percent = (float)totalBytesWritten / (float)totalBytesExpectedToWrite;
         if (percent > 0.95) {
             percent = 0.95;
         }
-        if (percent > _previousPercent) {
-            _previousPercent = percent;
+        if (percent > self.previousPercent) {
+            self.previousPercent = percent;
         } else {
-            percent = _previousPercent;
+            percent = self.previousPercent;
         }
-        _option.progressHandler(_key, percent);
+        self.option.progressHandler(self.key, percent);
     };
-    __block NSString *upHost = [_config.zone up:_token isHttps:_config.useHttps frozenDomain:nil];
+    __block NSString *upHost = [self.config.zone up:self.token isHttps:self.config.useHttps frozenDomain:nil];
     QNCompleteBlock complete = ^(QNResponseInfo *info, NSDictionary *resp) {
         if (info.isOK) {
-            _option.progressHandler(_key, 1.0);
+            self.option.progressHandler(self.key, 1.0);
         }
         if (info.isOK || !info.couldRetry) {
-            _complete(info, _key, resp);
+            self.complete(info, self.key, resp);
             return;
         }
-        if (_option.cancellationSignal()) {
-            _complete([QNResponseInfo cancel], _key, nil);
+        if (self.option.cancellationSignal()) {
+            self.complete([QNResponseInfo cancel], self.key, nil);
             return;
         }
         __block NSString *nextHost = upHost;
         if (info.isConnectionBroken || info.needSwitchServer) {
-            nextHost = [_config.zone up:_token isHttps:_config.useHttps frozenDomain:nextHost];
+            nextHost = [self.config.zone up:self.token isHttps:self.config.useHttps frozenDomain:nextHost];
         }
         QNCompleteBlock retriedComplete = ^(QNResponseInfo *info, NSDictionary *resp) {
             if (info.isOK) {
-                _option.progressHandler(_key, 1.0);
+                self.option.progressHandler(self.key, 1.0);
             }
             if (info.isOK || !info.couldRetry) {
-                _complete(info, _key, resp);
+                self.complete(info, self.key, resp);
                 return;
             }
-            if (_option.cancellationSignal()) {
-                _complete([QNResponseInfo cancel], _key, nil);
+            if (self.option.cancellationSignal()) {
+                self.complete([QNResponseInfo cancel], self.key, nil);
                 return;
             }
             NSString *thirdHost = nextHost;
             if (info.isConnectionBroken || info.needSwitchServer) {
-                thirdHost = [_config.zone up:_token isHttps:_config.useHttps frozenDomain:nextHost];
+                thirdHost = [self.config.zone up:self.token isHttps:self.config.useHttps frozenDomain:nextHost];
             }
             QNCompleteBlock thirdComplete = ^(QNResponseInfo *info, NSDictionary *resp) {
                 if (info.isOK) {
-                    _option.progressHandler(_key, 1.0);
+                    self.option.progressHandler(self.key, 1.0);
                 }
-                _complete(info, _key, resp);
+                self.complete(info, self.key, resp);
             };
-            [_httpManager multipartPost:thirdHost
-                               withData:_data
+            [self.httpManager multipartPost:thirdHost
+                               withData:self.data
                              withParams:parameters
-                           withFileName:_fileName
-                           withMimeType:_option.mimeType
+                           withFileName:self.fileName
+                           withMimeType:self.option.mimeType
                       withCompleteBlock:thirdComplete
                       withProgressBlock:p
-                        withCancelBlock:_option.cancellationSignal
-                             withAccess:_access];
+                        withCancelBlock:self.option.cancellationSignal
+                             withAccess:self.access];
         };
-        [_httpManager multipartPost:nextHost
-                           withData:_data
+        [self.httpManager multipartPost:nextHost
+                           withData:self.data
                          withParams:parameters
-                       withFileName:_fileName
-                       withMimeType:_option.mimeType
+                       withFileName:self.fileName
+                       withMimeType:self.option.mimeType
                   withCompleteBlock:retriedComplete
                   withProgressBlock:p
-                    withCancelBlock:_option.cancellationSignal
-                         withAccess:_access];
+                    withCancelBlock:self.option.cancellationSignal
+                         withAccess:self.access];
     };
-    [_httpManager multipartPost:upHost
-                       withData:_data
+    [self.httpManager multipartPost:upHost
+                       withData:self.data
                      withParams:parameters
-                   withFileName:_fileName
-                   withMimeType:_option.mimeType
+                   withFileName:self.fileName
+                   withMimeType:self.option.mimeType
               withCompleteBlock:complete
               withProgressBlock:p
-                withCancelBlock:_option.cancellationSignal
-                     withAccess:_access];
+                withCancelBlock:self.option.cancellationSignal
+                     withAccess:self.access];
 }
 @end
